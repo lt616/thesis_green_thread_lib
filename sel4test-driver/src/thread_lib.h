@@ -227,7 +227,7 @@ thread_pool_t *thread_initial();
 
 	Parameters:
 		stack_size: the size of stack;
-		func: start routine for the thread;
+		func: start rountine for the thread;
 		arg: argument for the start routine.
 
 	Return value:

@@ -12,11 +12,13 @@ sync_prim_initial(thread_sync_prim_t *sync_prim)
     sync_prim->next = NULL;
     sync_prim->waiting_start = NULL;
     sync_prim->waiting_end = NULL;
-
     /* add it into sync_prim list */
+    printf("%p\n", pool->sync_prim_start);
+    printf("test01\n");
     if (pool->sync_prim_start == NULL) {
         pool->sync_prim_start = sync_prim;
         pool->sync_prim_end = sync_prim;
+        printf("test02\n");
     } else {
         sync_prim->pre = pool->sync_prim_end;
         pool->sync_prim_end->next = sync_prim;
@@ -83,7 +85,7 @@ thread_lock_create()
     }
 
     sync_prim_initial((thread_sync_prim_t *) lock);
-
+    printf("MATCH\n");
     /* initial parameters */
     lock->helder = -1;
     lock->held = 0;
@@ -134,7 +136,7 @@ thread_lock_acquire_intern(thread_lock_t *lock, void *arg)
 void
 thread_lock_acquire(thread_lock_t *lock)
 {
-    thread_lock_acquire_intern(lock, lock);
+    thread_lock_acquire_intern(lock, lock); 
 
     return;
 }

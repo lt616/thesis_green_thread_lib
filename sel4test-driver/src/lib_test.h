@@ -34,7 +34,8 @@
 
 // #define BENCHMARK_BREAKDOWN_BEFORE
 // #define BENCHMARK_BREAKDOWN_MID
-#define BENCHMARK_BREAKDOWN_IPC
+// #define BENCHMARK_BREAKDOWN_IPC
+#define BENCHMARK_BREAKDOWN_SIGNAL
 #define BENCHMARK_ENTIRE
 
 // #define DEMO
@@ -50,8 +51,8 @@
 // #define VARY_SYNC_PRIMS
 
 /* configuration for different modes */
-#define SEL4_THREAD
-// #define GREEN_THREAD
+// #define SEL4_THREAD
+#define GREEN_THREAD
 // #define EVENT_CONTINUATION
 
 #define THREAD_LOCK
@@ -67,7 +68,8 @@ int test_seq;
 int client_count;
 int server_count;
 int terminate_num;
-
+unsigned signal_start_cycles_high, signal_start_cycles_low, signal_end_cycles_high, signal_end_cycles_low;
+uint64_t UNUSED signal_start, UNUSED signal_end;
 int started;
 
 seL4_Word client_ep;
@@ -85,20 +87,21 @@ seL4_timer_t *timer;
 #ifdef WAIT_SEND_WAIT
 #ifdef SEL4_THREAD
 seL4_CPtr tokenps[1000];
+sync_mutex_t tokens[1000];
 #endif
 #ifdef GREEN_THREAD
 thread_lock_t *tokens[1000];
 #endif
 #endif
 
+/* Vars for testing */
+int wait_count;
+
 /* Configuration for consumer-producer */
 #ifdef CONSUMER_PRODUCER
 
-int buffer_limit;
 int buffer;
-
-/* Vars for testing */
-int wait_count;
+int buffer_limit;
 
 #ifdef GREEN_THREAD
 thread_lock_t *lock_global;

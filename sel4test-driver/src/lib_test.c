@@ -43,6 +43,8 @@ initial_client_pool (int num)
 
     started = 0;
 
+    wait_count = 0; 
+
     even = 0;
 
 #ifdef CLIENT_SINGLE
@@ -76,7 +78,7 @@ initial_client_pool (int num)
 
 #ifdef BENCHMARK_BREAKDOWN_IPC
     ipc_cur =  0;
-    memset(ipc, 0, 6000 * sizeof(uint64_t)); 
+    memset(ipc, 0, 6000 * sizeof(uint64_t));
 
     // ipc_test_cur = 0;
 

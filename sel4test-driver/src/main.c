@@ -898,6 +898,13 @@ process_message(seL4_MessageInfo_t info, seL4_MessageInfo_t **reply, seL4_Word *
     int label = seL4_MessageInfo_get_label(info);
     seL4_MessageInfo_t temp;
     int client_id, error;
+    thread_lock_t *token_want, UNUSED *token_provide;
+
+    // asm volatile("CPUID\n\t"
+    //             "RDTSC\n\t"
+    //             "mov %%edx, %0\n\t"
+    //             "mov %%eax, %1\n\t" : "=r" (signal_start_cycles_high), "=r" (signal_start_cycles_low)
+    //             :: "%rax", "%rbx", "%rcx", "rdx");
 
     switch(label) {
         case INIT:
@@ -933,7 +940,7 @@ process_message(seL4_MessageInfo_t info, seL4_MessageInfo_t **reply, seL4_Word *
 
 
             case WAIT:
-            printf("Receive a wait request from %d %d %p\n", seL4_GetMR(0), seL4_GetMR(1), seL4_GetIPCBuffer());
+            // printf("Receive a wait request from %d %d %p\n", seL4_GetMR(0), seL4_GetMR(1), seL4_GetIPCBuffer());
 
             /* save reply_endpoint */
             error = vka_cnode_saveCaller(&pool->t_running->t->slot);
@@ -942,12 +949,11 @@ process_message(seL4_MessageInfo_t info, seL4_MessageInfo_t **reply, seL4_Word *
             }
 
             /* acquire token */
-            thread_lock_t *token_want = (thread_lock_t *) seL4_GetMR(2);
+            token_want = (void *) seL4_GetMR(2);
             // printf("sync prim %p\n", token_want);
             thread_lock_acquire(token_want);
 
-            printf("test01\n");
-            printf("Complete a wait request\n");
+            // printf("Complete a wait request\n");
 
 
             /* Reply msg */
@@ -964,25 +970,109 @@ process_message(seL4_MessageInfo_t info, seL4_MessageInfo_t **reply, seL4_Word *
 #ifdef BENCHMARK_ENTIRE
 if (! started) {
     started = 1;
+    printf("start\n");
     start = rdtsc();
 }
 #endif
-            printf("Receive a send_wait request from %d %d %p\n", seL4_GetMR(0), seL4_GetMR(1), seL4_GetIPCBuffer());
-
+            // printf("Receive a send_wait request from %d %d %p\n", seL4_GetMR(0), seL4_GetMR(1), seL4_GetIPCBuffer());
+// #ifdef BENCHMARK_BREAKDOWN_BEFORE
+// uint64_t UNUSED before_start, UNUSED before_end;
+// before_start = rdtsc();
+// #endif
+// asm volatile("CPUID\n\t"
+//             "RDTSC\n\t"
+//             "mov %%edx, %0\n\t"
+//             "mov %%eax, %1\n\t" : "=r" (signal_start_cycles_high), "=r" (signal_start_cycles_low)
+//             :: "%rax", "%rbx", "%rcx", "rdx");
             /* save reply_endpoint */
             error = vka_cnode_saveCaller(&pool->t_running->t->slot);
             if (error != seL4_NoError) {
                 printf("device_timer_save_caller_as_waiter failed to save caller.");
             }
+            // asm volatile("RDTSCP\n\t"
+            //             "mov %%edx, %0\n\t"
+            //             "mov %%eax, %1\n\t"
+            //             "CPUID\n\t" : "=r" (signal_end_cycles_high), "=r" (signal_end_cycles_low)
+            //             :: "%rax", "%rbx", "%rcx", "rdx");
+            //
+            // signal_start = (((uint64_t) signal_start_cycles_high << 32) | signal_start_cycles_low);
+            // signal_end = (((uint64_t) signal_end_cycles_high << 32) | signal_end_cycles_low);
+            // printf("COLLECTION - saving_ep %llu\n", (signal_end - signal_start));
+
+// #ifdef BENCHMARK_BREAKDOWN_BEFORE
+// before_end = rdtsc();
+// printf("COLLECTION - before %llu %llu %llu\n", (before_end - before_start), before_start, before_end);
+// #endif
+
+            wait_count ++;
+
+            token_want = (void *) seL4_GetMR(2);
+            token_provide = (void *) seL4_GetMR(3);
 
             /* release token */
-            thread_lock_release((thread_lock_t *) seL4_GetMR(3));
+// unsigned signal_start_cycles_high = 0, signal_start_cycles_low = 0, signal_end_cycles_high, signal_end_cycles_low;
+// uint64_t UNUSED signal_start, UNUSED signal_end;
+// if (pool->t_running->t->t_id == 20) {
+// asm volatile("CPUID\n\t"
+//             "RDTSC\n\t"
+//             "mov %%edx, %0\n\t"
+//             "mov %%eax, %1\n\t" : "=r" (signal_start_cycles_high), "=r" (signal_start_cycles_low)
+//             :: "%rax", "%rbx", "%rcx", "rdx");
+// }
+            thread_lock_release(token_provide);
+
+// if (pool->t_running->t->t_id == 20) {
+// asm volatile("RDTSCP\n\t"
+//             "mov %%edx, %0\n\t"
+//             "mov %%eax, %1\n\t"
+//             "CPUID\n\t" : "=r" (signal_end_cycles_high), "=r" (signal_end_cycles_low)
+//             :: "%rax", "%rbx", "%rcx", "rdx");
+//
+// signal_start = (((uint64_t) signal_start_cycles_high << 32) | signal_start_cycles_low);
+// signal_end = (((uint64_t) signal_end_cycles_high << 32) | signal_end_cycles_low);
+// printf("COLLECTION - SIGNAL %llu\n", (signal_end - signal_start));
+// }
 
             /* acquire token */
-            thread_lock_acquire((thread_lock_t *) seL4_GetMR(2));
 
-            printf("Complete a send_wait request\n");
+            if (pool->t_running->t->t_id == 20) {
+            asm volatile("CPUID\n\t"
+                        "RDTSC\n\t"
+                        "mov %%edx, %0\n\t"
+                        "mov %%eax, %1\n\t" : "=r" (signal_start_cycles_high), "=r" (signal_start_cycles_low)
+                        :: "%rax", "%rbx", "%rcx", "rdx");
+            }
+            thread_lock_acquire(token_want);
 
+            if (pool->t_running->t->t_id == 19) {
+            asm volatile("RDTSCP\n\t"
+                        "mov %%edx, %0\n\t"
+                        "mov %%eax, %1\n\t"
+                        "CPUID\n\t" : "=r" (signal_end_cycles_high), "=r" (signal_end_cycles_low)
+                        :: "%rax", "%rbx", "%rcx", "rdx");
+
+            signal_start = (((uint64_t) signal_start_cycles_high << 32) | signal_start_cycles_low);
+            signal_end = (((uint64_t) signal_end_cycles_high << 32) | signal_end_cycles_low);
+            printf("COLLECTION - WAIT %llu\n", (signal_end - signal_start));
+            }
+#ifdef BENCHMARK_BREAKDOWN_WAIT
+
+#endif
+            // printf("Complete a send_wait request\n");
+
+// #ifdef BENCHMARK_BREAKDOWN_IPC
+// *ipc_start = rdtsc();
+// #endif
+
+// asm volatile("RDTSCP\n\t"
+//             "mov %%edx, %0\n\t"
+//             "mov %%eax, %1\n\t"
+//             "CPUID\n\t" : "=r" (signal_end_cycles_high), "=r" (signal_end_cycles_low)
+//             :: "%rax", "%rbx", "%rcx", "rdx");
+//
+// signal_start = (((uint64_t) signal_start_cycles_high << 32) | signal_start_cycles_low);
+// signal_end = (((uint64_t) signal_end_cycles_high << 32) | signal_end_cycles_low);
+// printf("COLLECTION - saving_ep %llu\n", (signal_end - signal_start));
             /* Reply msg */
             temp = seL4_MessageInfo_new(SEND_WAIT, 0, 0, 0);
             *reply = &temp;
@@ -995,7 +1085,7 @@ if (! started) {
         case TMNT:
 
         client_id = seL4_GetMR(0);
-        printf("Client %d terminates\n", client_id);
+        // printf("Client %d terminates\n", client_id);
 
         terminate_num ++;
 
@@ -1003,6 +1093,7 @@ if (! started) {
 #ifdef BENCHMARK_ENTIRE
 end = rdtsc();
 printf("COLLECTION - total %llu %llu %llu\n", (end - start), start, end);
+printf("%d\n", wait_count);
 #endif
             printf("end of test\n");
             // printf("end of test\n");
@@ -1045,11 +1136,23 @@ server_loop(void *sync_prim)
         if (res == 1) {
 // #ifdef CLIENT_MULTIPLE
             seL4_Send(pool->t_running->t->slot.offset, *reply);
-            info = seL4_Recv(env.endpoint.cptr, NULL);
 // #ifdef BENCHMARK_BREAKDOWN_IPC
 // ipc_end = rdtsc();
-// ipc[ipc_cur ++] = ipc_end - ipc_start;
+// printf("COLLECTION - IPC1 %llu %llu %llu\n", (ipc_end - ipc_start), ipc_start, ipc_end);
 // #endif
+
+// #ifdef BENCHMARK_BREAKDOWN_IPC
+// ipc_start = rdtsc();
+// #endif
+            info = seL4_Recv(env.endpoint.cptr, NULL);
+            // #ifdef BENCHMARK_BREAKDOWN_IPC
+            // ipc_end = rdtsc();
+            // // ipc[started] = (ipc_end - ipc_start);
+            // printf("COLLECTION - IPC2 %llu %llu %llu\n", (ipc_end - ipc_start), ipc_start, ipc_end);
+            // #endif
+
+
+
 // #endif
 
 // #ifdef CLIENT_SINGLE
@@ -1066,6 +1169,7 @@ server_loop(void *sync_prim)
 
             assert(reply != NULL);
             info = seL4_ReplyRecv(env.endpoint.cptr, *reply, NULL);
+
         } else {
             info = seL4_Recv(env.endpoint.cptr, NULL);
 // #ifdef CLIENT_SINGLE
@@ -1358,7 +1462,8 @@ process_message(seL4_MessageInfo_t info, cspacepath_t *slot, seL4_MessageInfo_t 
     int label = seL4_MessageInfo_get_label(info);
     seL4_MessageInfo_t temp;
     int client_id, error;
-    seL4_CPtr token_want, token_provide;
+    // seL4_CPtr token_want, token_provide;
+    sync_mutex_t *token_want, *token_provide;
 
     switch(label) {
         case INIT:
@@ -1400,10 +1505,11 @@ process_message(seL4_MessageInfo_t info, cspacepath_t *slot, seL4_MessageInfo_t 
             /* save reply_endpoint */
 
             /* acquire token */
-            token_want = (seL4_CPtr) seL4_GetMR(2);
+            // token_want = (seL4_CPtr) seL4_GetMR(2);
+            token_want = (sync_mutex_t *) seL4_GetMR(2);
 
-            // sync_mutex_lock(token_want);
-            seL4_Wait(token_want, NULL);
+            // seL4_Wait(token_want, NULL);
+            sync_mutex_lock(token_want);
 
 
             /* Reply msg */
@@ -1428,15 +1534,17 @@ if (! started) {
             /* save reply_endpoint */
 
             /* release token */
-            token_provide = (seL4_CPtr) seL4_GetMR(3);
-            token_want = (seL4_CPtr) seL4_GetMR(2);
+            // token_provide = (seL4_CPtr) seL4_GetMR(3);
+            // token_want = (seL4_CPtr) seL4_GetMR(2);
+            token_want = (sync_mutex_t *) seL4_GetMR(2);
+            token_provide = (sync_mutex_t *) seL4_GetMR(3);
 
-            // sync_mutex_unlock((sync_mutex_t *) seL4_GetMR(3));
-            seL4_Signal(token_provide);
+            // seL4_Signal(token_provide);
+            sync_mutex_unlock(token_provide);
 
             /* acquire token */
-            // sync_mutex_lock((sync_mutex_t *) seL4_GetMR(2));
-            seL4_Wait(token_want, NULL);
+            // seL4_Wait(token_want, NULL);
+            sync_mutex_lock(token_want);
 
             // printf("Complete a send_wait request %d %d %p\n", seL4_GetMR(0), seL4_GetMR(1), seL4_GetIPCBuffer());
 
@@ -2118,8 +2226,8 @@ client_program( void )
     /* find the token it want */
     int id_want = (id == client_count - 1) ? 0 : id + 1;
 #ifdef SEL4_THREAD
-    // int token_want = (int) &tokens[id_want];
-    int token_want = (int) tokenps[id_want];
+    int token_want = (int) &tokens[id_want];
+    // int token_want = (int) tokenps[id_want];
 #endif
 
 #ifdef GREEN_THREAD
@@ -2128,8 +2236,8 @@ client_program( void )
 
     /* find the token it provide */
 #ifdef SEL4_THREAD
-    // int token_provide = (int) &tokens[id];
-    int token_provide = (int) tokenps[id];
+    int token_provide = (int) &tokens[id];
+    // int token_provide = (int) tokenps[id];
 #endif
 
 #ifdef GREEN_THREAD
@@ -2147,7 +2255,7 @@ client_program( void )
         info_reply = seL4_Call(env.endpoint.cptr, info_request);
     }
 
-    for (int i = 0;i < 50;i ++) {
+    for (int i = 0;i < 100;i ++) {
         info_request = seL4_MessageInfo_new(SEND_WAIT, 0, 0, 4);
         seL4_SetMR(0, id);
         seL4_SetMR(1, i);
@@ -2658,8 +2766,12 @@ void *main_continued(void *arg UNUSED)
 
     asm volatile("CPUID\n\t");
 
-    client_count = 100;
+    client_count = 250;
 printf("start\n");
+
+#ifdef GREEN_THREAD
+    thread_initial();
+#endif
 
 #ifdef EVENT_CONTINUATION
 /* Create an endpoint */
@@ -2682,9 +2794,11 @@ printf("helper finished %d\n", helper_ep);
         // notification = vka_alloc_notification_leaky(&env.vka);
         // sync_mutex_init(&tokens[i], notification);
 
-        // sync_mutex_lock(&tokens[i]);
-
         tokenps[i] = vka_alloc_notification_leaky(&env.vka);
+        sync_mutex_init(&tokens[i], tokenps[i]);
+
+        sync_mutex_lock(&tokens[i]);
+printf("mutex %d initialized successfully\n", i);
     }
     printf("tokens initialized successful\n");
 #endif
@@ -2692,6 +2806,7 @@ printf("helper finished %d\n", helper_ep);
 #ifdef GREEN_THREAD
     /* create a series of tokens */
     for (int i = 0;i < client_count;i ++) {
+        printf("initialized\n");
         tokens[i] = thread_lock_create();
         tokens[i]->held = 1;
     }
@@ -2757,9 +2872,7 @@ printf("client finished %d\n", client_ep);
 #endif
 
 #ifdef GREEN_THREAD
-    thread_initial();
     initial_client_pool(client_count);
-printf("initialized\n");
 
 
     //
@@ -2975,6 +3088,47 @@ test_multi_join(int test_num)
 
 
 
+void *
+test_thread_one(void *lock)
+{
+    for (int i = 0;i < 1000;i ++)
+        thread_sleep(lock, NULL);
+
+    printf("end of test\n");
+
+    return NULL;
+}
+
+void *
+test_thread_sec(void *lock)
+{
+    for (int i = 0;i < 1000;i ++) {
+        thread_wakeup(lock, NULL);
+        thread_yield();
+    }
+
+    return NULL;
+}
+
+
+
+void *
+test_thread_switch()
+{
+    thread_initial();
+
+    thread_lock_t *lock = thread_lock_create();
+
+    printf("thread one %d\n", thread_create(allocman, &env.vspace, test_thread_one, lock));
+    printf("thread sec %d\n", thread_create(allocman, &env.vspace, test_thread_sec, lock));
+
+    thread_resume(1);
+
+    return NULL;
+}
+
+
+
 int main(void)
 {
     int error;
@@ -3095,6 +3249,8 @@ int main(void)
     // printf("Test for adding/ removing lock from list starts:\n");
     // test_lock_list();
 
+    // test_thread_switch();
+
     /* Demo functions */
     printf("\nTests begin\n");
 
@@ -3108,7 +3264,17 @@ int main(void)
     // test_nested_join(20);
     // printf("------------ end ------------\n\n");
 
+
+
+    // for (int i = 0;i < 1000;i ++) {
+    //     uint64_t rdtsc_s, rdtsc_d;
+    //     rdtsc_s = rdtsc();
+    //     rdtsc_d = rdtsc();
+    //
+    //     printf("%llu\n", (rdtsc_d - rdtsc_s));
+    // }
     // printf("the end of test\n");
+
 
     printf("Test synchronous primitives, sleep and wakeup - producer_consumer scenario\n");
     printf("------------ start ------------\n");

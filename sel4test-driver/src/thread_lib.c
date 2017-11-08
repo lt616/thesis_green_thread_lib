@@ -1097,8 +1097,12 @@ thread_sleep(void *sync_prim, void *arg)
 // rdtsc_end();
 // printf("COLLECTION - sleep %llu\n", (end - start));
 
-// rdtsc_start();
+// if (pool->t_running->t->t_id == 2) {
+    // printf("start test\n");
+    // start = rdtsc();
+// }
         swap_context((void *) cur->t->context, (void *) new->t->context);
+
 // rdtsc_end();
 // printf("COLLECTION - CONTEXT SWITCHING %llu %llu %llu\n", (end - start), start, end);
 
@@ -1139,7 +1143,7 @@ thread_wakeup(void *sync_prim, void *arg)
     // thread_link_t *cur = pool->t_running;
     // assert(cur != NULL);
 
-    running_to_ready(new); 
+    running_to_ready(new);
 
     // waiting_to_running(new);
 
@@ -1463,6 +1467,11 @@ thread_resume(int t_id)
         new->status = running;
 
     swap_context((void *) cur->context, (void *) new->context);
+    // printf("current thread %d\n", pool->t_running->t->t_id);
+        // if (pool->t_running->t->t_id == 2) {
+            // end = rdtsc();
+            // printf("COLLECTION - THREAD SWITCH %llu %llu %llu\n", (end - start), start, end);
+        // }
 
     return 1;
 }
